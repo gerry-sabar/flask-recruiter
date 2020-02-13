@@ -42,7 +42,7 @@ class Login(Resource):
         user = UserApi.query.filter_by(email=payload['email']).first()
 
         if user is not None and user.verify_password(payload['password']):
-            expires = datetime.timedelta(minutes=10)
+            expires = datetime.timedelta(seconds=10)
             access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
             refresh_token = create_refresh_token(identity=payload['email'])
             user.access_token = access_token
@@ -58,11 +58,11 @@ class Login(Resource):
             }
 
         else:
-            return { 'status': 'invalid username/password'}
+            return ({ 'message': 'Invalid username/password'},403)
 
-@api.route('/')
+@api.route('/all')
 class UserList(Resource):
-    @jwt_required
+    #@jwt_required
     @api.marshal_list_with(user)
     def get(self):
         '''Get all users'''
@@ -84,17 +84,15 @@ class RefreshToken(Resource):
         email = get_jwt_identity()
 
         if not email:
-            return { 'status': 'invalid refresh token'}
+            return ({ 'status': 'invalid refresh token'},400)
 
         user = UserApi.query.filter_by(email=email).first()
-        expires = datetime.timedelta(minutes=10)
-        user.access_token = create_access_token(identity=email, fresh=True, expires_delta=expires)
-        user.refresh_token = create_refresh_token(identity=email)
+        access_token_expiry = datetime.timedelta(seconds=10)
+        refresh_token_expiry = datetime.timedelta(minutes=10)
+        user.access_token = create_access_token(identity=email, fresh=True, expires_delta=access_token_expiry)
+        user.refresh_token = create_refresh_token(identity=email, expires_delta=refresh_token_expiry)
 
-        #jti = get_raw_jwt()['jti']
-        #blacklist.add(jti)
-
-        return user
+        return (user,200)
 
 
 update_fields = api.model('User', {
@@ -113,9 +111,9 @@ class User(Resource):
         user = UserApi.query.filter_by(uuid=uuid).first()
 
         if not user:
-            return { 'status': 'user is not found'}
+            return ({ 'status': 'user is not found'},404)
 
-        return user
+        return (user,200)
 
     @api.expect(update_fields)
     @api.marshal_with(user)
