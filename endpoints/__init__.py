@@ -1,5 +1,5 @@
+from flask import Blueprint
 from flask_restplus import Api
-
 from .user import api as user_api
 
 #add api key
@@ -12,12 +12,13 @@ authorizations = {
     }
 }
 
-api = Api(
-    title='Simple API',
-    version='1.0',
-    description='A simple demo API',
-    authorizations=authorizations,
-    security='apikey'
-)
+blueprint = Blueprint('endpoints', __name__)
+api = Api(blueprint,
+          title='Simple API',
+          version='1.0',
+          description='A simple demo API',
+          authorizations=authorizations,
+          security='apikey'
+          )
 
 api.add_namespace(user_api)

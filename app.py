@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, url_for
 from werkzeug.contrib.fixers import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -6,8 +6,8 @@ from flask_jwt_extended import (
     JWTManager,
 )
 from flask_cors import CORS
-import psycopg2
-from flask_login import login_user, login_required, LoginManager, logout_user
+import json
+from flask_login import login_user, LoginManager
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://flask:flask@localhost/flask_recruiter"
@@ -37,9 +37,15 @@ from auth.auth import auth_bp
 app.register_blueprint(auth_bp)
 from admin.admin import admin_bp
 app.register_blueprint(admin_bp)
-#from endpoints import api
-#api.init_app(app)
 
+from endpoints import blueprint as api
+app.register_blueprint(api, url_prefix='/api/v1')
+
+
+def has_no_empty_params(rule):
+    defaults = rule.defaults if rule.defaults is not None else ()
+    arguments = rule.arguments if rule.arguments is not None else ()
+    return len(defaults) >= len(arguments)
 
 @app.cli.command("seeder")
 def seed():
@@ -68,6 +74,20 @@ def user_login():
     user =  UserApi.query.first()
     login_user(user)
     return 'login'
+
+@app.route("/site-map")
+def site_map():
+    links = []
+    for rule in app.url_map.iter_rules():
+        # Filter out rules we can't navigate to in a browser
+        # and rules that require parameters
+        if "GET" in rule.methods and has_no_empty_params(rule):
+            url = url_for(rule.endpoint, **(rule.defaults or {}))
+            #links.append((url, rule.endpoint))
+            #links.update({'link': url})
+            links.append(url)
+    return json.dumps(links)
+    # links is now a list of url, endpoint tuples
 
 """
 @app.route('/authenticated')
