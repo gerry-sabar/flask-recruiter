@@ -33,8 +33,12 @@ jwt = JWTManager(app)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
 
-from endpoints import api
-api.init_app(app)
+from auth.auth import auth_bp
+app.register_blueprint(auth_bp)
+from admin.admin import admin_bp
+app.register_blueprint(admin_bp)
+#from endpoints import api
+#api.init_app(app)
 
 
 @app.cli.command("seeder")
@@ -46,12 +50,26 @@ def seed():
     for x in range(3):
         UserApi.seed(fake)
 
+@app.route('/testing')
+def testing():
+    from faker import Faker
+    fake = Faker()
+    from datetime import datetime
+    me = UserApi(email = fake.email(),
+            password = 'password',
+            created_at = datetime.now())
+    db.session.add(me)
+    db.session.commit()
+    return 'testing'
+
+
 @app.route('/login')
 def user_login():
     user =  UserApi.query.first()
     login_user(user)
     return 'login'
 
+"""
 @app.route('/authenticated')
 @login_required
 def user_authenticated():
@@ -66,6 +84,7 @@ def user_logout():
 def unauthorized():
     # do stuff
     return 'unauthorized'
+"""
 
 if __name__ == "__main__":
   app.run(host='127.0.0.1', port=5000)
