@@ -12,12 +12,10 @@ auth_bp = Blueprint(
 
 @auth_bp.route('/login', methods=['GET','POST'])
 def login():
-    users = UserApi.query.all()
-
     form = LoginForm()
     if request.method == 'POST':
         if form.validate_on_submit():
-            user = User.query.filter_by(email=request.form['email']).first()
+            user = UserApi.query.filter_by(email=request.form['email']).first()
             if user is not None and user.verify_password(request.form['password']):
                 login_user(user)
                 return redirect('/')
@@ -25,7 +23,7 @@ def login():
                 form.email.errors.append('This account is not found')
         else:
             flash(form.validate())
-    return render_template('auth/login.html', form=form, users=users)
+    return render_template('auth/login.html', form=form)
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():

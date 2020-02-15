@@ -1,4 +1,4 @@
-from flask import Flask, url_for
+from flask import Flask, url_for, redirect
 from werkzeug.contrib.fixers import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -10,7 +10,8 @@ import json
 from flask_login import login_user, LoginManager
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://flask:flask@localhost/flask_recruiter"
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:root@localhost/flask_recruiter"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db = SQLAlchemy(app)
 db.init_app(app)
@@ -88,6 +89,14 @@ def site_map():
             links.append(url)
     return json.dumps(links)
     # links is now a list of url, endpoint tuples
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    return redirect('/login')
+
+@login_manager.user_loader
+def load_user(user_id):
+    return UserApi.query.get(user_id)
 
 """
 @app.route('/authenticated')

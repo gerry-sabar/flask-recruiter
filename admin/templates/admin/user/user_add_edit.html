@@ -9,15 +9,23 @@
             User
         </div>
         <div class="card-body">
-            {% if form.errors %}
+            {% with messages = get_flashed_messages() %}
+            {% if messages%}
             <div class="alert alert-danger" role="alert">
+                {% for message in messages %}
+                {% if message == False%}
                 {% for field_name, field_errors in form.errors|dictsort if field_errors %}
                 {% for error in field_errors %}
                 <li>{{ form[field_name].label }}: {{ error }}</li>
                 {% endfor %}
                 {% endfor %}
+                {% else %}
+                <li class="font-weight-bold">{{ message }}</li>
+                {% endif %}
+                {% endfor %}
             </div>
             {% endif %}
+            {% endwith %}
             <div class="row">
                 <div class="col-sm-6">
                     {% if user %}
