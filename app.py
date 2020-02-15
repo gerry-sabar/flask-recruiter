@@ -1,3 +1,4 @@
+import os
 from flask import Flask, url_for, redirect
 from werkzeug.contrib.fixers import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
@@ -8,9 +9,11 @@ from flask_jwt_extended import (
 from flask_cors import CORS
 import json
 from flask_login import login_user, LoginManager
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:root@localhost/flask_recruiter"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DB_CONNECTION')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 db = SQLAlchemy(app)
@@ -25,11 +28,11 @@ from models.user import UserApi
 migrate = Migrate(app, db)
 
 # Setup the Flask-JWT-Extended extension
-app.config['RESTPLUS_MASK_SWAGGER'] = False # remove default X-Fields field in swagger
-app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
+app.config['RESTPLUS_MASK_SWAGGER'] = False
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access', 'refresh']
-app.config["SECRET_KEY"] = "OCML3BRawWEUeaxcuKHLpw"
+app.config["SECRET_KEY"] = os.getenv('SECRET_KEY')
 jwt = JWTManager(app)
 
 app.wsgi_app = ProxyFix(app.wsgi_app)
