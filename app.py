@@ -1,5 +1,5 @@
 import os
-from flask import Flask, url_for, redirect
+from flask import Flask, url_for, redirect, jsonify
 from werkzeug.contrib.fixers import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -41,6 +41,15 @@ from auth.auth import auth_bp
 app.register_blueprint(auth_bp)
 from admin.admin import admin_bp
 app.register_blueprint(admin_bp)
+
+@jwt.expired_token_loader
+def my_expired_token_callback(expired_token):
+    token_type = expired_token['type']
+    return jsonify({
+        'status': 401,
+        'sub_status': 42,
+        'msg': 'The {} token has expired'.format(token_type)
+    }), 422
 
 from endpoints import blueprint as api
 app.register_blueprint(api, url_prefix='/api/v1')

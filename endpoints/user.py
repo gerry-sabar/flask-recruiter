@@ -42,13 +42,14 @@ class Login(Resource):
         user = UserApi.query.filter_by(email=payload['email']).first()
 
         if user is not None and user.verify_password(payload['password']):
-            expires = datetime.timedelta(seconds=10)
-            access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
-            refresh_token = create_refresh_token(identity=payload['email'])
+            access_token_expiry = datetime.timedelta(seconds=10)
+            access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=access_token_expiry)
+            refresh_token_expiry = datetime.timedelta(minutes=10)
+            refresh_token = create_refresh_token(identity=payload['email'], expires_delta=refresh_token_expiry)
             user.access_token = access_token
             user.refresh_token = refresh_token
             db.session.add(user)
-            db.session.commit()
+            db.session.commit() #test
 
             return {
                 'uuid': user.uuid,
