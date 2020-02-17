@@ -4,12 +4,14 @@ from flask_jwt_extended import (
     jwt_refresh_token_required, get_jwt_identity, get_raw_jwt,
 )
 import datetime
+from datetime import datetime as created_at
 from flask import request
 from app import db
 from flask_restplus import Resource, fields
 from models.user import UserApi
 from app import jwt
 from flask import request, jsonify, make_response
+import uuid
 
 api = Namespace('users', description='Users related operations')
 user = api.model('UserApi', {
@@ -100,6 +102,49 @@ update_fields = api.model('User', {
     'email': fields.String,
     'password': fields.String,
 })
+
+import re
+EMAIL_REGEX=re.compile(r"[^@]+@[^@]+\.[^@]+")
+
+@api.route('/register')
+class UserPost(Resource):
+    @api.expect(update_fields)
+    def post(self):
+        payload = request.get_json()
+
+        if not EMAIL_REGEX.match(payload['email']):
+            return ({'error': 'Invalid email address'}, 400)
+
+        user = UserApi.query.filter_by(email=payload['email']).first()
+        if user:
+            return ({'error': 'email is already exist'}, 409)
+
+        post = UserApi(
+            uuid=str(uuid.uuid4()),
+            email=payload['email'],
+            password_hash=payload['password'],
+            created_at=created_at.now()
+        )
+        db.session.add(post)
+        db.session.commit()
+
+        user = UserApi.query.filter_by(email=payload['email']).first()
+
+        expires = datetime.timedelta(seconds=10)
+        access_token = create_access_token(identity=payload['email'], fresh=True, expires_delta=expires)
+        refresh_token = create_refresh_token(identity=payload['email'])
+        user.access_token = access_token
+        user.refresh_token = refresh_token
+        db.session.add(user)
+        db.session.commit()
+
+        return {
+            'uuid': user.uuid,
+            'email': user.email,
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+        }
+
 @api.route('/<uuid>')
 @api.param('uuid', 'User UUID')
 @api.response(404, 'User not found')
